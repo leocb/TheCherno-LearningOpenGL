@@ -31,8 +31,8 @@ int main(void)
 	/* set some buffers */
 	float positions[6] = {
 		-0.5f, -0.5f,
-		0.0f, 0.5f,
-		0.5f, -0.5f
+		 0.0f,  0.5f,
+		 0.5f, -0.5f
 	};
 
 	unsigned int bufferId;
@@ -40,6 +40,10 @@ int main(void)
 	glBindBuffer(GL_ARRAY_BUFFER, bufferId);
 	glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(float), positions, GL_STATIC_DRAW);
 
+	glEnableVertexAttribArray(0);
+	glVertexAttribIPointer(0, 2, GL_FLOAT, sizeof(float) * 2, 0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	/* Loop until the user closes the window */
 	while (!glfwWindowShouldClose(window))
