@@ -1,37 +1,14 @@
 #include "GL/glew.h"
 #include "GLFW/glfw3.h"
+
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <sstream>
 
-#define ASSERT(x) if (!(x)) __debugbreak();
-#ifdef _DEBUG
-#define GLCall(x) \
-	GLClearError();\
-	x;\
-	ASSERT(GLLogCall(#x, __FILE__, __LINE__))
-#else
-#define GLCall(x) x
-#endif
-
-// read all error flags from OpenGL (clear them)
-static void GLClearError()
-{
-	while (glGetError() != GL_NO_ERROR);
-}
-
-// if a error flag is set, log it in the console window
-static bool GLLogCall(const char* function, const char* file, int line)
-{
-	while (GLenum error = glGetError())
-	{
-		std::cout << "[OpenGL Error] (" << std::hex << error << std::dec << "): " << function << " @ " << file << ":" << line << std::endl;
-		return false;
-	}
-
-	return true;
-}
+#include "Renderer.h"
+#include "VertexBuffer.h"
+#include "IndexBuffer.h"
 
 // struct used to store the shader program sources
 struct ShaderProgramSource
@@ -71,7 +48,9 @@ static ShaderProgramSource ParseShader(const std::string& filePath)
 		}
 		else {
 			if (type == ShaderType::NONE) continue;
-			ss[(int)type] << line << '\n'; //add the line to the source of this shader type
+
+			//add the line to the source of this shader type
+			ss[(int)type] << line << '\n';
 		}
 	}
 
@@ -114,7 +93,10 @@ static unsigned int CompileShader(unsigned int type, const std::string& sourceCo
 	}
 
 	// all done.
-	std::cout << "Compiled " << (type == GL_VERTEX_SHADER ? "vertex" : "fragment") << " shader " << shaderId << std::endl;
+	std::cout << "Compiled " 
+		<< (type == GL_VERTEX_SHADER ? "vertex" : "fragment") 
+		<< " shader " << shaderId << std::endl;
+
 	return shaderId;
 }
 
@@ -169,97 +151,95 @@ int main(void)
 	if (glewInit() != GLEW_OK)
 		std::cerr << "GLEW INIT ERROR!" << std::endl;
 
-	std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl << std::endl;
+	std::cout << "OpenGL Version: " 
+		<< glGetString(GL_VERSION) << std::endl << std::endl;
 
-	/* set buffers */
-	float positions[] = {
-		-0.5f, -0.5f, // 0
-		 0.5f, -0.5f, // 1
-		 0.5f,  0.5f, // 2
-		-0.5f,  0.5f  // 3
-	};
-
-	unsigned int indices[] = {
-		0,1,2,
-		2,3,0
-	};
-
-	// VAO - vertex attribute object
-	unsigned int vao; 
-	GLCall(glGenVertexArrays(1, &vao));
-	GLCall(glBindVertexArray(vao));
-
-	// Vertex buffer
-	unsigned int buffer;
-	GLCall(glGenBuffers(1, &buffer));
-	GLCall(glBindBuffer(GL_ARRAY_BUFFER, buffer));
-	GLCall(glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(float), positions, GL_STATIC_DRAW));
-
-	// link vertex buffer to vao (index 0) - Define how the data is organized inside the buffer
-	GLCall(glEnableVertexAttribArray(0));
-	GLCall(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0));
-
-	// index buffer object (also linked to the VAO) - Define in what order to draw the vertices
-	unsigned int ibo;
-	GLCall(glGenBuffers(1, &ibo));
-	GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo));
-	GLCall(glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * sizeof(unsigned int), indices, GL_STATIC_DRAW));
-
-	// Shaders
-	ShaderProgramSource source = ParseShader("res/shaders/Basic.shader");
-	unsigned int shader = CreateShader(source.VertexSource, source.FragmentSource);
-	GLCall(glUseProgram(shader));
-
-	// Shader uniform
-	GLCall(int location = glGetUniformLocation(shader, "u_Color"));
-	ASSERT(location != -1);
-	GLCall(glUniform4f(location, 0.2, 0.4f, 0.8f, 1.0f)); // define a "default" value (necessary?)
-
-
-	// Clear bindings we used to build the buffers
-	GLCall(glBindVertexArray(0));
-	GLCall(glUseProgram(0));
-	GLCall(glBindBuffer(GL_ARRAY_BUFFER, 0));
-	GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
-
-
-	// some vars to control the red channel down bellow
-	float r = 0.0f;
-	float increment = 0.05f;
-
-	/* Loop until the user closes the window */
-	while (!glfwWindowShouldClose(window))
 	{
-		/* Render here */
-		// Clear everything
-		glClear(GL_COLOR_BUFFER_BIT);
+		/* set buffers */
+		float positions[] = {
+			-0.5f, -0.5f, // 0
+			 0.5f, -0.5f, // 1
+			 0.5f,  0.5f, // 2
+			-0.5f,  0.5f  // 3
+		};
 
-		// Shader
-		GLCall(glUseProgram(shader));
-		GLCall(glUniform4f(location, r, 0.4f, 0.8f, 1.0f));
+		unsigned int indices[] = {
+			0,1,2,
+			2,3,0
+		};
 
-		// VAO
+		// VAO - vertex attribute object
+		unsigned int vao;
+		GLCall(glGenVertexArrays(1, &vao));
 		GLCall(glBindVertexArray(vao));
 
-		// Draw call
-		GLCall(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr)); // 6 is the number of elements (vertex index),
+		// Vertex buffer
+		VertexBuffer vb(positions, 4 * 2 * sizeof(float));
 
-		// change red channel color
-		if (r > 1.0f)
-			increment = -0.05f;
-		else if (r < 0.0f)
-			increment = 0.05f;
+		// link vertex buffer to vao (index 0) - Define how the data is organized inside the buffer
+		GLCall(glEnableVertexAttribArray(0));
+		GLCall(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0));
 
-		r += increment;
+		// index buffer object (also linked to the VAO) - Define in what order to draw the vertices
+		IndexBuffer ib(indices, 2 * 3);
 
-		/* Swap front and back buffers */
-		glfwSwapBuffers(window);
+		// Shaders
+		ShaderProgramSource source = ParseShader("res/shaders/Basic.shader");
+		unsigned int shader = CreateShader(source.VertexSource, source.FragmentSource);
+		GLCall(glUseProgram(shader));
 
-		/* Poll for and process events */
-		glfwPollEvents();
+		// Shader uniform
+		GLCall(int location = glGetUniformLocation(shader, "u_Color"));
+		ASSERT(location != -1);
+		GLCall(glUniform4f(location, 0.2, 0.4f, 0.8f, 1.0f)); // define a "default" value (necessary?)
+
+
+		// Clear bindings we used to build the buffers
+		GLCall(glBindVertexArray(0));
+		GLCall(glUseProgram(0));
+		GLCall(glBindBuffer(GL_ARRAY_BUFFER, 0));
+		GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
+
+
+		// some vars to control the red channel down bellow
+		float r = 0.0f;
+		float increment = 0.05f;
+
+		/* Loop until the user closes the window */
+		while (!glfwWindowShouldClose(window))
+		{
+			/* Render here */
+			// Clear everything
+			glClear(GL_COLOR_BUFFER_BIT);
+
+			// Shader
+			GLCall(glUseProgram(shader));
+			GLCall(glUniform4f(location, r, 0.4f, 0.8f, 1.0f));
+
+			// VAO
+			GLCall(glBindVertexArray(vao));
+
+			// Draw call
+			GLCall(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr)); // 6 is the number of elements (vertex index),
+
+			// change red channel color
+			if (r > 1.0f)
+				increment = -0.05f;
+			else if (r < 0.0f)
+				increment = 0.05f;
+
+			r += increment;
+
+			/* Swap front and back buffers */
+			glfwSwapBuffers(window);
+
+			/* Poll for and process events */
+			glfwPollEvents();
+		}
+
+		GLCall(glDeleteProgram(shader));
+
 	}
-
-	GLCall(glDeleteProgram(shader));
 
 	glfwTerminate();
 	return 0;
