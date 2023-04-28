@@ -9,6 +9,7 @@
 #include "Renderer.h"
 #include "VertexBuffer.h"
 #include "IndexBuffer.h"
+#include "VertexArray.h"
 
 // struct used to store the shader program sources
 struct ShaderProgramSource
@@ -168,20 +169,22 @@ int main(void)
 			2,3,0
 		};
 
-		// VAO - vertex array object
-		unsigned int vao;
-		GLCall(glGenVertexArrays(1, &vao));
-		GLCall(glBindVertexArray(vao));
+		// Vertex array object
+		VertexArray vao;
 
-		// Vertex buffer
-		VertexBuffer vb(positions, 4 * 2 * sizeof(float));
+		// Vertex buffer object
+		VertexBuffer vbo(positions, 4 * 2 * sizeof(float));
 
-		// link vertex buffer to vao (index 0) - Define how the data is organized inside the buffer
-		GLCall(glEnableVertexAttribArray(0));
-		GLCall(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0));
+		// link vertex buffer to VAO - Define how the data is organized inside the buffer
+		VertexBufferLayout layout;
+		// each push also affects the index of the layout inside the vbo (used in the vertex shader)
+		// in this case, positions will be at index 0
+		// if we add another push, say, for normals, it will be at index 1
+		layout.Push<float>(2);
+		vao.AddBuffer(vbo, layout);
 
-		// index buffer object (also linked to the VAO) - Define in what order to draw the vertices
-		IndexBuffer ib(indices, 2 * 3);
+		// link index buffer object (also linked to the VAO) - Define in what order to draw the vertices
+		IndexBuffer ibo(indices, 2 * 3);
 
 		// Shaders
 		ShaderProgramSource source = ParseShader("res/shaders/Basic.shader");
@@ -191,14 +194,14 @@ int main(void)
 		// Shader uniform
 		GLCall(int location = glGetUniformLocation(shader, "u_Color"));
 		ASSERT(location != -1);
-		GLCall(glUniform4f(location, 0.2, 0.4f, 0.8f, 1.0f)); // define a "default" value (necessary?)
+		GLCall(glUniform4f(location, 0.2f, 0.4f, 0.8f, 1.0f)); // define a "default" value (necessary?)
 
 
 		// Clear bindings we used to build the buffers
-		GLCall(glBindVertexArray(0));
+		vao.Unbind();
 		GLCall(glUseProgram(0));
-		GLCall(glBindBuffer(GL_ARRAY_BUFFER, 0));
-		GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
+		vbo.Unbind();
+		ibo.Unbind();
 
 
 		// some vars to control the red channel down bellow
@@ -217,7 +220,7 @@ int main(void)
 			GLCall(glUniform4f(location, r, 0.4f, 0.8f, 1.0f));
 
 			// VAO
-			GLCall(glBindVertexArray(vao));
+			vao.Bind();
 
 			// Draw call
 			GLCall(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr)); // 6 is the number of elements (vertex index),
