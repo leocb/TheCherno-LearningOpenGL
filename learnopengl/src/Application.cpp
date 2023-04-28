@@ -2,125 +2,12 @@
 #include "GLFW/glfw3.h"
 
 #include <iostream>
-#include <fstream>
-#include <string>
-#include <sstream>
 
 #include "Renderer.h"
 #include "VertexBuffer.h"
 #include "IndexBuffer.h"
 #include "VertexArray.h"
-
-// struct used to store the shader program sources
-struct ShaderProgramSource
-{
-	std::string VertexSource;
-	std::string FragmentSource;
-};
-
-// parse the shader file and extract the vertex and fragment shaders
-static ShaderProgramSource ParseShader(const std::string& filePath)
-{
-	// enum (used to select the correct string stream index
-	enum class ShaderType
-	{
-		NONE = -1,
-		VERTEX = 0,
-		FRAGMENT = 1
-	};
-
-	// File reading 
-	std::ifstream stream(filePath);
-	std::string line;
-
-	// string source separation
-	ShaderType type = ShaderType::NONE;
-	std::stringstream ss[2];
-
-	// read file and separate each line by type
-	while (getline(stream, line)) {
-		if (line.find("shader") != std::string::npos)
-		{
-			if (line.find("vertex") != std::string::npos)
-				type = ShaderType::VERTEX;
-
-			else if (line.find("fragment") != std::string::npos)
-				type = ShaderType::FRAGMENT;
-		}
-		else {
-			if (type == ShaderType::NONE) continue;
-
-			//add the line to the source of this shader type
-			ss[(int)type] << line << '\n';
-		}
-	}
-
-	// return the program shader source struct
-	return { ss[0].str(), ss[1].str() };
-}
-
-// compile the shader program for the GPU
-static unsigned int CompileShader(unsigned int type, const std::string& sourceCode)
-{
-	// create a new shader program
-	GLCall(unsigned int shaderId = glCreateShader(type));
-
-	// set the source code and compile
-	const char* rawsrc = sourceCode.c_str();
-	GLCall(glShaderSource(shaderId, 1, &rawsrc, nullptr));
-	GLCall(glCompileShader(shaderId));
-
-	// Verify shader compilation status
-	int result;
-	GLCall(glGetShaderiv(shaderId, GL_COMPILE_STATUS, &result));
-	if (result == GL_FALSE)
-	{
-		// Failed, get message
-		// first get the message length
-		int messageLen;
-		GLCall(glGetShaderiv(shaderId, GL_INFO_LOG_LENGTH, &messageLen));
-		// allocate memory in the stack (NOT in the heap) and get the message
-		char* message = (char*)_malloca(messageLen * sizeof(char));
-		GLCall(glGetShaderInfoLog(shaderId, messageLen, &messageLen, message));
-
-		// Message output in the console window
-		std::cerr << "Failed to compile " <<
-			(type == GL_VERTEX_SHADER ? "vertex" : "fragment") <<
-			" shader: " << std::endl << message << std::endl;
-
-		// Delete failed shader and return 0 (invalid state)
-		GLCall(glDeleteShader(shaderId));
-		return 0;
-	}
-
-	// all done.
-	std::cout << "Compiled " 
-		<< (type == GL_VERTEX_SHADER ? "vertex" : "fragment") 
-		<< " shader " << shaderId << std::endl;
-
-	return shaderId;
-}
-
-static unsigned int CreateShader(const std::string& vertexShaderSource, const std::string& fragmentShaderSource)
-{
-	// Compile the shaders
-	unsigned int program = glCreateProgram();
-	unsigned int vs = CompileShader(GL_VERTEX_SHADER, vertexShaderSource);
-	unsigned int fs = CompileShader(GL_FRAGMENT_SHADER, fragmentShaderSource);
-
-	// link them to the program
-	GLCall(glAttachShader(program, vs));
-	GLCall(glAttachShader(program, fs));
-	GLCall(glLinkProgram(program));
-	GLCall(glValidateProgram(program));
-
-	// Delete intermediary - this is not *really* necessary and can be commented out for GPU debugging
-	GLCall(glDeleteShader(vs));
-	GLCall(glDeleteShader(fs));
-	std::cout << "Program created " << program << std::endl;
-
-	return program;
-}
+#include "Shader.h"
 
 int main(void)
 {
@@ -187,21 +74,18 @@ int main(void)
 		IndexBuffer ibo(indices, 2 * 3);
 
 		// Shaders
-		ShaderProgramSource source = ParseShader("res/shaders/Basic.shader");
-		unsigned int shader = CreateShader(source.VertexSource, source.FragmentSource);
-		GLCall(glUseProgram(shader));
+		
 
-		// Shader uniform
-		GLCall(int location = glGetUniformLocation(shader, "u_Color"));
-		ASSERT(location != -1);
-		GLCall(glUniform4f(location, 0.2f, 0.4f, 0.8f, 1.0f)); // define a "default" value (necessary?)
-
+		// the shader itself
+		Shader shader("res/shaders/Basic.shader");
+		shader.Bind();
+		shader.SetUniform4f("u_Color", 0.0f, 0.4f, 0.8f, 1.0f);
 
 		// Clear bindings we used to build the buffers
 		vao.Unbind();
-		GLCall(glUseProgram(0));
 		vbo.Unbind();
 		ibo.Unbind();
+		shader.Unbind();
 
 
 		// some vars to control the red channel down bellow
@@ -216,8 +100,9 @@ int main(void)
 			glClear(GL_COLOR_BUFFER_BIT);
 
 			// Shader
-			GLCall(glUseProgram(shader));
-			GLCall(glUniform4f(location, r, 0.4f, 0.8f, 1.0f));
+			shader.Bind();
+			shader.SetUniform4f("u_Color", r, 0.4f, 0.8f, 1.0f);
+
 
 			// VAO
 			vao.Bind();
@@ -239,9 +124,6 @@ int main(void)
 			/* Poll for and process events */
 			glfwPollEvents();
 		}
-
-		GLCall(glDeleteProgram(shader));
-
 	}
 
 	glfwTerminate();
