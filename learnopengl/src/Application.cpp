@@ -168,7 +168,7 @@ int main(void)
 			2,3,0
 		};
 
-		// VAO - vertex attribute object
+		// VAO - vertex array object
 		unsigned int vao;
 		GLCall(glGenVertexArrays(1, &vao));
 		GLCall(glBindVertexArray(vao));
