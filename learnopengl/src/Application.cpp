@@ -23,7 +23,7 @@ int main(void)
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	/* Create a windowed mode window and its OpenGL context */
-	window = glfwCreateWindow(1024, 1024, "Hello World", NULL, NULL);
+	window = glfwCreateWindow(800, 600, "Hello World", NULL, NULL);
 	if (!window)
 	{
 		glfwTerminate();
@@ -51,10 +51,10 @@ int main(void)
 		/* set buffers */
 		// This buffer is (pos.x, pos.y, tex.u, tex.v)
 		float positions[] = {
-			-0.8f, -0.8f, 0.0f, 0.0f, // 0
-			 0.8f, -0.8f, 1.0f, 0.0f, // 1
-			 0.8f,  0.8f, 1.0f, 1.0f, // 2
-			-0.8f,  0.8f, 0.0f, 1.0f  // 3
+			-0.5f, -0.5f, 0.0f, 0.0f, // 0
+			 0.5f, -0.5f, 1.0f, 0.0f, // 1
+			 0.5f,  0.5f, 1.0f, 1.0f, // 2
+			-0.5f,  0.5f, 0.0f, 1.0f  // 3
 		};
 
 		unsigned int indices[] = {
