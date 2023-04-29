@@ -8,6 +8,7 @@
 #include "IndexBuffer.h"
 #include "VertexArray.h"
 #include "Shader.h"
+#include "Texture.h"
 
 int main(void)
 {
@@ -22,7 +23,7 @@ int main(void)
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	/* Create a windowed mode window and its OpenGL context */
-	window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
+	window = glfwCreateWindow(1024, 1024, "Hello World", NULL, NULL);
 	if (!window)
 	{
 		glfwTerminate();
@@ -35,6 +36,10 @@ int main(void)
 	// enable vsync
 	glfwSwapInterval(1);
 
+	// enable alpha blend
+	GLCall(glEnable(GL_BLEND));
+	GLCall(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+
 	// check if glew initialized correctly
 	if (glewInit() != GLEW_OK)
 		std::cerr << "GLEW INIT ERROR!" << std::endl;
@@ -44,11 +49,12 @@ int main(void)
 
 	{
 		/* set buffers */
+		// This buffer is (pos.x, pos.y, tex.u, tex.v)
 		float positions[] = {
-			-0.5f, -0.5f, // 0
-			 0.5f, -0.5f, // 1
-			 0.5f,  0.5f, // 2
-			-0.5f,  0.5f  // 3
+			-0.8f, -0.8f, 0.0f, 0.0f, // 0
+			 0.8f, -0.8f, 1.0f, 0.0f, // 1
+			 0.8f,  0.8f, 1.0f, 1.0f, // 2
+			-0.8f,  0.8f, 0.0f, 1.0f  // 3
 		};
 
 		unsigned int indices[] = {
@@ -60,14 +66,15 @@ int main(void)
 		VertexArray vao;
 
 		// Vertex buffer object
-		VertexBuffer vbo(positions, 4 * 2 * sizeof(float));
+		VertexBuffer vbo(positions, 4 * 2 * 2 * sizeof(float));
 
 		// link vertex buffer to VAO - Define how the data is organized inside the buffer
 		VertexBufferLayout layout;
 		// each push also affects the index of the layout inside the vbo (used in the vertex shader)
 		// in this case, positions will be at index 0
-		// if we add another push, say, for normals, it will be at index 1
-		layout.Push<float>(2);
+		// if we add another push, say, for textures, it will be at index 1
+		layout.Push<float>(2); // positions
+		layout.Push<float>(2); // texture coordinates
 		vao.AddBuffer(vbo, layout);
 
 		// link index buffer object (also linked to the VAO) - Define in what order to draw the vertices
@@ -77,6 +84,11 @@ int main(void)
 		Shader shader("res/shaders/Basic.shader");
 		shader.Bind();
 		shader.SetUniform4f("u_Color", 0.0f, 0.4f, 0.8f, 1.0f);
+
+		// Texture
+		Texture texture("res/textures/Bart.png");
+		texture.Bind(0);
+		shader.SetUniform1i("u_Texture", 0);
 
 		// Clear bindings we used to build the buffers
 		vao.Unbind();
