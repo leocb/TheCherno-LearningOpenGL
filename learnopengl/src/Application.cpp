@@ -10,6 +10,9 @@
 #include "Shader.h"
 #include "Texture.h"
 
+#include "glm/glm.hpp"
+#include "glm/gtc/matrix_transform.hpp"
+
 int main(void)
 {
 	GLFWwindow* window;
@@ -80,10 +83,14 @@ int main(void)
 		// link index buffer object (also linked to the VAO) - Define in what order to draw the vertices
 		IndexBuffer ibo(indices, 2 * 3);
 
+		// Transformation matrix
+		glm::mat4 proj = glm::ortho(-2.0f, 2.0f, -1.5f, 1.5f, -1.0f, 1.0f);
+
 		// Shaders
 		Shader shader("res/shaders/Basic.shader");
 		shader.Bind();
 		shader.SetUniform4f("u_Color", 0.0f, 0.4f, 0.8f, 1.0f);
+		shader.SetUniformMat4f("u_MVP", proj);
 
 		// Texture
 		Texture texture("res/textures/Bart.png");
