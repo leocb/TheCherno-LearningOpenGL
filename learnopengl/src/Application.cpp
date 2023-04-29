@@ -74,9 +74,6 @@ int main(void)
 		IndexBuffer ibo(indices, 2 * 3);
 
 		// Shaders
-		
-
-		// the shader itself
 		Shader shader("res/shaders/Basic.shader");
 		shader.Bind();
 		shader.SetUniform4f("u_Color", 0.0f, 0.4f, 0.8f, 1.0f);
@@ -87,6 +84,8 @@ int main(void)
 		ibo.Unbind();
 		shader.Unbind();
 
+		// Set the renderer
+		Renderer renderer;
 
 		// some vars to control the red channel down bellow
 		float r = 0.0f;
@@ -96,19 +95,10 @@ int main(void)
 		while (!glfwWindowShouldClose(window))
 		{
 			/* Render here */
-			// Clear everything
-			glClear(GL_COLOR_BUFFER_BIT);
-
-			// Shader
+			renderer.Clear();
 			shader.Bind();
 			shader.SetUniform4f("u_Color", r, 0.4f, 0.8f, 1.0f);
-
-
-			// VAO
-			vao.Bind();
-
-			// Draw call
-			GLCall(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr)); // 6 is the number of elements (vertex index),
+			renderer.Draw(vao, ibo, shader);
 
 			// change red channel color
 			if (r > 1.0f)
