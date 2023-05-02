@@ -156,7 +156,7 @@ int main(void)
 			{
 				ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
 				ImGui::SliderFloat3("Translation", &translation.x, 0.0f, 960.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-				ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+				ImGui::Text("fps %.1f (%.3fms)", io.Framerate, 1000.0f / io.Framerate);
 				ImGui::End();
 			}
 
