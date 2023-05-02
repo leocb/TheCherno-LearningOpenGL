@@ -138,7 +138,8 @@ int main(void)
 		float r = 0.0f;
 		float increment = 0.05f;
 
-		glm::vec3 translation(0.0f, 0.0f, 0.0f);
+		glm::vec3 translationA(50.0f, 50.0f, 0.0f);
+		glm::vec3 translationB(0.0f, 0.0f, 0.0f);
 
 		/* Loop until the user closes the window */
 		while (!glfwWindowShouldClose(window))
@@ -155,24 +156,30 @@ int main(void)
 			static float f = 0.0f;
 			{
 				ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
-				ImGui::SliderFloat3("Translation", &translation.x, 0.0f, 960.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+				ImGui::SliderFloat3("Translation A", &translationA.x, 0.0f, 960.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+				ImGui::SliderFloat3("Translation B", &translationB.x, 0.0f, 960.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
 				ImGui::Text("fps %.1f (%.3fms)", io.Framerate, 1000.0f / io.Framerate);
 				ImGui::End();
 			}
 
-			//move the model
-
-			// the model matrix
-			glm::mat4 model = glm::translate(glm::mat4(1.0f), translation);
-			// the mvp
-			glm::mat4 mvp = proj * view * model;
-
-			/* Render here */
 			renderer.Clear();
-			shader.Bind();
-			shader.SetUniformMat4f("u_MVP", mvp);
-			shader.SetUniform4f("u_Color", r, 0.4f, 0.8f, 1.0f);
-			renderer.Draw(vao, ibo, shader);
+
+			// move the model
+			{
+				glm::mat4 model = glm::translate(glm::mat4(1.0f), translationA);
+				glm::mat4 mvp = proj * view * model;
+				shader.Bind();
+				shader.SetUniformMat4f("u_MVP", mvp);
+				renderer.Draw(vao, ibo, shader);
+			}
+			{
+				glm::mat4 model = glm::translate(glm::mat4(1.0f), translationB);
+				glm::mat4 mvp = proj * view * model;
+				shader.Bind();
+				shader.SetUniformMat4f("u_MVP", mvp);
+				renderer.Draw(vao, ibo, shader);
+			}
+
 
 			// change red channel color
 			if (r > 1.0f)
