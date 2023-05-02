@@ -13,6 +13,10 @@
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_glfw.h"
+#include "imgui/imgui_impl_opengl3.h"
+
 int main(void)
 {
 	GLFWwindow* window;
@@ -54,10 +58,10 @@ int main(void)
 		/* set buffers */
 		// This buffer is (pos.x, pos.y, tex.u, tex.v)
 		float positions[] = {
-			100.0f, 100.0f, 0.0f, 0.0f, // 0
-			200.0f, 100.0f, 1.0f, 0.0f, // 1
-			200.0f, 200.0f, 1.0f, 1.0f, // 2
-			100.0f, 200.0f, 0.0f, 1.0f  // 3
+			000.0f, 000.0f, 0.0f, 0.0f, // 0
+			100.0f, 000.0f, 1.0f, 0.0f, // 1
+			100.0f, 100.0f, 1.0f, 1.0f, // 2
+			000.0f, 100.0f, 0.0f, 1.0f  // 3
 		};
 
 		unsigned int indices[] = {
@@ -86,7 +90,7 @@ int main(void)
 		// the projection matrix
 		glm::mat4 proj = glm::ortho(0.0f, 960.0f, 0.0f, 540.0f, -1.0f, 1.0f);
 		// the "camera" / view matrix
-		glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(-100, 0, 0));
+		glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0));
 		// the model matrix
 		glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(200, 200, 0));
 		// the mvp
@@ -112,16 +116,61 @@ int main(void)
 		// Set the renderer
 		Renderer renderer;
 
+
+		// imgui
+		// Setup Dear ImGui context
+		IMGUI_CHECKVERSION();
+		ImGui::CreateContext();
+		ImGuiIO& io = ImGui::GetIO(); (void)io;
+		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+		io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+		// Setup Dear ImGui style
+		ImGui::StyleColorsDark();
+		//ImGui::StyleColorsLight();
+
+		// Setup Platform/Renderer backends
+		ImGui_ImplGlfw_InitForOpenGL(window, true);
+		ImGui_ImplOpenGL3_Init();
+
+
 		// some vars to control the red channel down bellow
 		float r = 0.0f;
 		float increment = 0.05f;
 
+		glm::vec3 translation(0.0f, 0.0f, 0.0f);
+
 		/* Loop until the user closes the window */
 		while (!glfwWindowShouldClose(window))
 		{
+			// imgui
+			glfwPollEvents();
+
+			// Start the Dear ImGui frame
+			ImGui_ImplOpenGL3_NewFrame();
+			ImGui_ImplGlfw_NewFrame();
+			ImGui::NewFrame();
+
+			// window
+			static float f = 0.0f;
+			{
+				ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+				ImGui::SliderFloat3("Translation", &translation.x, 0.0f, 960.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+				ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+				ImGui::End();
+			}
+
+			//move the model
+
+			// the model matrix
+			glm::mat4 model = glm::translate(glm::mat4(1.0f), translation);
+			// the mvp
+			glm::mat4 mvp = proj * view * model;
+
 			/* Render here */
 			renderer.Clear();
 			shader.Bind();
+			shader.SetUniformMat4f("u_MVP", mvp);
 			shader.SetUniform4f("u_Color", r, 0.4f, 0.8f, 1.0f);
 			renderer.Draw(vao, ibo, shader);
 
@@ -133,6 +182,10 @@ int main(void)
 
 			r += increment;
 
+			// imgui
+			ImGui::Render();
+			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
 			/* Swap front and back buffers */
 			glfwSwapBuffers(window);
 
@@ -140,6 +193,12 @@ int main(void)
 			glfwPollEvents();
 		}
 	}
+
+
+	// imgui Cleanup
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
 
 	glfwTerminate();
 	return 0;
