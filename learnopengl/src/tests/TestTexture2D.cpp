@@ -12,7 +12,7 @@ namespace test {
 		, m_View(glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0)))
 
 	{
-		GLCall(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
+		//GLCall(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
 		GLCall(glClear(GL_COLOR_BUFFER_BIT));
 
 		/* set buffers */
