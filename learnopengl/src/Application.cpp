@@ -45,7 +45,7 @@ int main(void)
 	glfwMakeContextCurrent(window);
 
 	// enable vsync
-	glfwSwapInterval(1);
+	// glfwSwapInterval(1);
 
 	// enable alpha blend
 	GLCall(glEnable(GL_BLEND));
